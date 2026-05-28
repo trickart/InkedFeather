@@ -1,27 +1,76 @@
 // swift-tools-version: 6.3
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "InkedFeather",
+    platforms: [.macOS(.v10_15)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "InkedFeather",
-            targets: ["InkedFeather"]
-        ),
+        .executable(name: "Application", targets: ["Application"]),
+        .executable(name: "Bootloader", targets: ["Bootloader"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "InkedFeather"
+            name: "TrapHandler",
+            publicHeadersPath: "include"
         ),
-        .testTarget(
-            name: "InkedFeatherTests",
-            dependencies: ["InkedFeather"]
+        .target(
+            name: "HeapAllocator",
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Extern"),
+            ]
         ),
-    ],
-    swiftLanguageModes: [.v6]
+        .target(
+            name: "MemoryPrimitives",
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Extern"),
+                .unsafeFlags(["-Xllvm", "-disable-loop-idiom-memcpy"]),
+            ]
+        ),
+        .target(
+            name: "SoftFloat",
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Extern"),
+            ]
+        ),
+        .target(
+            name: "Registers",
+            exclude: ["esp32c3.svd"],
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Volatile"),
+            ]
+        ),
+        .executableTarget(
+            name: "Application",
+            dependencies: [
+                "Registers",
+                "MemoryPrimitives",
+                "HeapAllocator",
+                "TrapHandler",
+                "SoftFloat",
+            ],
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Extern"),
+                .enableExperimentalFeature("Volatile"),
+            ]
+        ),
+        .executableTarget(
+            name: "Bootloader",
+            dependencies: [
+                "Registers",
+                "MemoryPrimitives",
+                "HeapAllocator",
+            ],
+            swiftSettings: [
+                .enableExperimentalFeature("Embedded"),
+                .enableExperimentalFeature("Extern"),
+                .enableExperimentalFeature("Volatile"),
+            ]
+        ),
+    ]
 )
